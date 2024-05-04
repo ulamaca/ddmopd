@@ -9,13 +9,8 @@
 import numpy as np
 import pandas as pd
 from rdkit import Chem
-from pandarallel import pandarallel # this is a default!? for pandas?
-pandarallel.initialize(progress_bar=False)
-
 from map4 import MAP4Calculator
 from mapchiral.mapchiral import encode
-
-hemo_path = '/home/ulamaca/projects/10_peptide/data/dbaasp/fine_tune_hemolysis.csv'
 
 def replace_inf_to_float_inf(str_):
     return str_.replace('inf', 'float("inf")')
@@ -45,10 +40,18 @@ def calc_map4(smiles):
     map4 = MAP4.calculate(mol)
     return np.array(map4)
 
+def seq_to_map4(seq: str):
+    smiles = seq_to_smiles(seq)
+    map4_fp = calc_map4(smiles)
+
+    return np.array(map4_fp)
 
 if __name__ == "__main__":
+    hemo_path = '/home/ulamaca/projects/10_peptide/data/dbaasp/fine_tune_hemolysis.csv'
     ADD_MAP4C = False
     ADD_MAP4 = True
+    from pandarallel import pandarallel # this is a default!? for pandas?
+    pandarallel.initialize(progress_bar=False)
 
 
     df_hemo = pd.read_csv(hemo_path, index_col='ID')
