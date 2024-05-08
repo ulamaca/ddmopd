@@ -26,10 +26,17 @@ def legalize_seq_for_clf(seq: str):
 
     return seq
 
-def get_svm_hemo_scorer():
+def get_svm_scorer(task='hemo'):
     from feature.map4_fp import seq_to_map4
-    model = joblib.load(HEMO_SK_MODEL_PATH)
-    scaler = joblib.load(HEMO_SK_SCALER_PATH)
+    
+    if task == 'hemo':
+        model = joblib.load(HEMO_SK_MODEL_PATH)
+        scaler = joblib.load(HEMO_SK_SCALER_PATH)
+    elif task == 'actv':
+        model = joblib.load(ACTV_SK_MODEL_PATH)
+        scaler = joblib.load(ACTV_SK_SCALER_PATH)
+    else:
+        raise ValueError
     featurizer = seq_to_map4
 
     hemo_svm_scorer = SKModelScorer(
@@ -51,7 +58,7 @@ if __name__ == "__main__":
     mutator = Genetic_Mutations(data_path=data_path)
     
     # 2 define pred model
-    scorer = get_svm_hemo_scorer() 
+    scorer = get_svm_scorer(task='actv') 
     
     # 3 hill climber
     n_step = 50
