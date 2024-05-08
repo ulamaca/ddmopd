@@ -81,7 +81,9 @@ if __name__ == "__main__":
             raise ValueError
         X = scaler.fit_transform(X)
         x = scaler.transform(x)
-            
+
+        joblib.dump(scaler, os.path.join(MODEL_PATH, 'actv_scaler_minmax_norm_map4.joblib'))        
+              
     # prep X,Y,x,y
     # training        
     if GRID_SEARCH:
