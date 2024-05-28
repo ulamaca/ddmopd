@@ -149,8 +149,10 @@ class NSGA2:
             
             # TODO: to complete the following methods
             population_new = self.fill_population(front_dict_R) # updated population_new
-            population_new = self.sort_ranked_population(population_new)
+            ## where the selection happens
+            population_new = self.sort_ranked_population(population_new) 
             population_new = population_new[:self.population_size] # choose the eliltes            
+            ## 
             parent_population = population_new
                         
 
