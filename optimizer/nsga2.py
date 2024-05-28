@@ -1,6 +1,8 @@
 from .chromosome import Chromosome
 from .nondominate_sort import sort_nondominate, convert_front_dict_to_df
 from manipulate.mutate import Genetic_Mutations
+from manipulate.cross_over import cut_inverted_cross_over
+import random
 
 '''
     NSGA2 for Peptide Optimization
@@ -37,22 +39,28 @@ class NSGA2:
                 intsertion_f,
                 scorers: dict,      
                 num_generations=100,
-                seed_population = list[Chromosome],
+                seed_population = list[str],
                 population_size=1000,
                 mutator = Genetic_Mutations(),
                 mutate_rate=0.3,                
                 crossover_rate=0.8,
+                retain_rate=0.2,
                 insertion_rate=0.3,                
-                constraint_handle=[],                           
-                ) -> None:
-        pass
+                constraint_handle=[],   
+                random_seed=56,                                        
+                ) -> None:        
         
         assert len(constraint_handle) > 0, 'constraint handle is not yet implemented'
 
+        random.seed(random_seed)
         self.scorer_dict = scorers
         self.population_size = population_size
+        self.cross_over_rate = crossover_rate
+        self.mutate_rate = mutate_rate
+        self.mutator = mutator
         self.num_generations = num_generations
-
+        self.scorer_dict = scorers
+        
     
     # init population
     def init_popluation_with_a_seed(self, seed_seq = 'GLPALISWSKRKRQQ'):                
@@ -65,17 +73,52 @@ class NSGA2:
         '''        
         return
 
+    def evaluate_population(self, population: list[str]) -> list[Chromosome]:
+        '''
+            evaluate (multi-) scores of a given population and
+            transform the format to Chromosomes
+        '''
+        population_chromosomes = []
+
+        for i, pep_seq in enumerate(population):
+            x = Chromosome(
+                id=i,
+                sequence=pep_seq,
+                scores={k:v(x) for k,v in self.scorer_dict.items()}
+            )
+
+            population_chromosomes.append(x)
+
+        return population_chromosomes
+
     def make_new_population(self, population):
         '''
             do evolutionary operations on the current populations
                 1 mutation
-                2 cross-over
-                3 insertion
+                2 cross-over + (3 insertion)                
             according to the config
-        '''
+        '''        
 
+        # cross over
+        n_offsprings = int(self.population_size * self.cross_over_rate)
+        n_parent_to_stay = self.population_size - n_offsprings
+        
+        mates = [random.sample(population, 2) for _ in range(n_offsprings)]
 
-        return 
+        new_population = []
+
+        if n_parent_to_stay > 0:
+            parents_to_stay = random.sample(population, n_parent_to_stay)            
+            new_population.extend(parents_to_stay)
+
+        if n_offsprings > 0:
+            offsprings = [cut_inverted_cross_over(parent[0], parent[1]) for parent in mates]
+            new_population.extend(offsprings)
+        
+        if self.mutate_rate > 0:
+            new_population = [ self.mutator.mutate(pep_seq) if random.uniform(0,1) <= self.mutation_rate else pep_seq  for pep_seq in new_population ]
+
+        return new_population
     
     def sort_ranked_population(self, population, cd=False):
         '''
@@ -83,19 +126,31 @@ class NSGA2:
         '''
 
     def run(self):        
-        population_old = self.init_popluation_with_a_seed()
-        population_new = self.init_popluation_with_a_seed()
+        '''
+            *_population: list of str
+            
+            R_chromosome: list of Chromoses
+
+            TODO:
+                to think about the best use of Chromosome representation
+        '''
+        # TODO: to make the population init more flexible
+        parent_population = self.init_popluation_with_a_seed()
+        child_population = []
         
         generations = []
         # initial population
-
-        # TODO: to think more about handle population_new and population_old
+               
         for step in range(self.num_generations):                
-            R = population_old + population_new # R for R_t in the NSGA-II paper
-            front_dict_R = sort_nondominate(R) # only rank the chromosoes
+            child_population = self.make_new_population(parent_population)
+            R = child_population + population_new # R for R_t in the NSGA-II paper
+            R_chromosomes = self.evaluate_population(R)
+            front_dict_R = sort_nondominate(R_chromosomes) # only rank the chromosoes                                                
+            
+            # TODO: to complete the following methods
             population_new = self.fill_population(front_dict_R) # updated population_new
             population_new = self.sort_ranked_population(population_new)
-            population_new = population_new[:self.population_size] # choose the eliltes
-            population_new = self.make_new_population(population_new)
-            #population_old = population_new
+            population_new = population_new[:self.population_size] # choose the eliltes            
+            parent_population = population_new
+                        
 
