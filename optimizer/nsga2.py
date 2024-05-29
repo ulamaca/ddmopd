@@ -68,14 +68,28 @@ class NSGA2:
         population = [legalize_seq_for_clf(self.mutator.mutate(seed_seq)) for _ in range(self.population_size)]  
         return population
     
-    def fill_population(self, front_dict: dict):
+    def fill_population(self, front_dict: dict) -> list[Chromosome]:
         '''
             fill the poluation given the current sorted front and retained chromosome
         '''  
         filled_population = []
+        n_to_fill = self.population_size
         
+        # TODO: assume the front_dict is being sorted already!!
         
-        return
+        for k,v in front_dict.items():
+            print(f' collecting {k}th front')
+            if len(v) <= n_to_fill:
+                filled_population.extend(v)
+            else:
+                filled_population.extend(v[:n_to_fill])
+            
+            if len(filled_population) == self.population_size:
+                break
+            else:
+                n_to_fill = self.population_size - len(filled_population)
+                        
+        return filled_population
 
     def evaluate_population(self, population: list[str]) -> list[Chromosome]:
         '''
@@ -155,15 +169,15 @@ class NSGA2:
             print(f'ga: runing {step}th generation')       
             child_population = self.make_new_population(parent_population)
             R = child_population + parent_population# R for R_t in the NSGA-II paper
+            # TODO: to avoid re-evaluate evaluated ones (if needed)
             R_chrsms = self.evaluate_population(R)
-            front_dict_R = sort_nondominate(R_chrsms, list(self.scorer_dict.keys())) # only rank the chromosoes  
-            breakpoint()                                              
-            
-            # TODO: to complete the following methods
-            population_new = self.fill_population(front_dict_R) # updated population_new
+            front_dict_R = sort_nondominate(R_chrsms, list(self.scorer_dict.keys())) # only rank the chromosoes                                                            
+                                                
             ## where the selection happens
+            population_new = self.fill_population(front_dict_R) # updated population_new
+            # TODO: to complete the following methods
             population_new = self.sort_ranked_population(population_new) 
-            population_new = population_new[:self.population_size] # choose the eliltes            
+            population_new = population_new[:self.population_size] # choose the eliltes                        
             ## 
             parent_population = population_new
                         
