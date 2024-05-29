@@ -25,7 +25,7 @@ def dominance_check(p: Chromosome, q:Chromosome, score_names=['p_hemo', 'p_actv'
     return check_result
 
 
-def sort_nondominate(chromosomes: list[Chromosome]):    
+def sort_nondominate(chromosomes: list[Chromosome], score_names: list[str]):    
     dict_dominance = defaultdict(list)
     dict_n_be_dominated = defaultdict(int)
     
@@ -35,7 +35,7 @@ def sort_nondominate(chromosomes: list[Chromosome]):
     for p in chromosomes:
         for q in chromosomes:            
             #print(p,q)
-            check_p_dominates_q = dominance_check(p,q)            
+            check_p_dominates_q = dominance_check(p,q, score_names)            
             if check_p_dominates_q == 1:
                 dict_dominance[p.id].append(q)
             elif check_p_dominates_q == 0:
@@ -64,6 +64,7 @@ def sort_nondominate(chromosomes: list[Chromosome]):
         current_front = new_front
         front_dict[current_rank] = current_front
     
+    print(' done NDS (non-dominated sorting)')
     return front_dict
 
 def convert_front_dict_to_df(front_dict, score_names=['p_hemo', 'p_actv']):
