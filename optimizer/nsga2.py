@@ -68,7 +68,7 @@ class NSGA2:
         population = [legalize_seq_for_clf(self.mutator.mutate(seed_seq)) for _ in range(self.population_size)]  
         return population
     
-    def fill_population(self, front_dict: dict) -> list[Chromosome]:
+    def fill_population(self, front_dict: dict, verbose=False) -> list[Chromosome]:
         '''
             fill the poluation given the current sorted front and retained chromosome
         '''  
@@ -78,7 +78,8 @@ class NSGA2:
         # TODO: assume the front_dict is being sorted already!!
         
         for k,v in front_dict.items():
-            print(f' collecting {k}th front')
+            if verbose:
+                print(f' collecting {k}th front')
             if len(v) <= n_to_fill:
                 filled_population.extend(v)
             else:
@@ -175,6 +176,7 @@ class NSGA2:
                                                 
             ## where the selection happens
             population_new = self.fill_population(front_dict_R) # updated population_new
+            breakpoint()
             # TODO: to complete the following methods
             population_new = self.sort_ranked_population(population_new) 
             population_new = population_new[:self.population_size] # choose the eliltes                        
