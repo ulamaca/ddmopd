@@ -31,26 +31,26 @@ def legalize_seq_for_clf(seq: str):
 
     return seq
 
-
+# default mutator
+defult_mutator = Genetic_Mutations(data_path='data/cpp/cpp_predictor_dataset.csv')
 
 class NSGA2:
-    def __init__(self,                
-                crossover_f,
-                intsertion_f,
+    def __init__(self,                                
                 scorers: dict,      
-                num_generations=100,
-                seed_population = list[str],
+                num_generations=100,                
                 population_size=1000,
-                mutator = Genetic_Mutations(),
-                mutate_rate=0.3,                
+                mutator = defult_mutator,
+                mutate_rate=0.3,      
+                crossover_f = None,                          
                 crossover_rate=0.8,
+                intsertion_f = None,
                 retain_rate=0.2,
-                insertion_rate=0.3,                
+                insertion_rate=0.3,                                
                 constraint_handle=[],   
                 random_seed=56,                                        
                 ) -> None:        
         
-        assert len(constraint_handle) > 0, 'constraint handle is not yet implemented'
+        assert len(constraint_handle) <= 0, 'constraint handle is not yet implemented'
 
         random.seed(random_seed)
         self.scorer_dict = scorers
@@ -60,6 +60,7 @@ class NSGA2:
         self.mutator = mutator
         self.num_generations = num_generations
         self.scorer_dict = scorers
+        self._runs = 0 # how many runs have done
         
     
     # init population
@@ -70,7 +71,10 @@ class NSGA2:
     def fill_population(self, front_dict: dict):
         '''
             fill the poluation given the current sorted front and retained chromosome
-        '''        
+        '''  
+        filled_population = []
+        
+        
         return
 
     def evaluate_population(self, population: list[str]) -> list[Chromosome]:
@@ -79,16 +83,22 @@ class NSGA2:
             transform the format to Chromosomes
         '''
         population_chromosomes = []
-
+        
+        population_scores = {}
+        for name, scorer in self.scorer_dict.items():
+            population_scores[name] = scorer.predict_proba(population)[:,1]
+        
         for i, pep_seq in enumerate(population):
             x = Chromosome(
                 id=i,
                 sequence=pep_seq,
-                scores={k:v(x) for k,v in self.scorer_dict.items()}
+                scores={k:v[i] for k,v in population_scores.items()}
             )
 
             population_chromosomes.append(x)
 
+        # verbose
+        print(' done evaluation')        
         return population_chromosomes
 
     def make_new_population(self, population):
@@ -116,7 +126,7 @@ class NSGA2:
             new_population.extend(offsprings)
         
         if self.mutate_rate > 0:
-            new_population = [ self.mutator.mutate(pep_seq) if random.uniform(0,1) <= self.mutation_rate else pep_seq  for pep_seq in new_population ]
+            new_population = [ self.mutator.mutate(pep_seq) if random.uniform(0,1) <= self.mutate_rate else pep_seq  for pep_seq in new_population ]
 
         return new_population
     
@@ -125,7 +135,7 @@ class NSGA2:
             cd: sort considering crowding distance (TODO)
         '''
 
-    def run(self):        
+    def run(self, seed_population=None):        
         '''
             *_population: list of str
             
@@ -135,17 +145,19 @@ class NSGA2:
                 to think about the best use of Chromosome representation
         '''
         # TODO: to make the population init more flexible
-        parent_population = self.init_popluation_with_a_seed()
+        parent_population = self.init_popluation_with_a_seed() if seed_population is None else seed_population                
         child_population = []
         
         generations = []
         # initial population
                
-        for step in range(self.num_generations):                
+        for step in range(self.num_generations):         
+            print(f'ga: runing {step}th generation')       
             child_population = self.make_new_population(parent_population)
-            R = child_population + population_new # R for R_t in the NSGA-II paper
-            R_chromosomes = self.evaluate_population(R)
-            front_dict_R = sort_nondominate(R_chromosomes) # only rank the chromosoes                                                
+            R = child_population + parent_population# R for R_t in the NSGA-II paper
+            R_chrsms = self.evaluate_population(R)
+            front_dict_R = sort_nondominate(R_chrsms, list(self.scorer_dict.keys())) # only rank the chromosoes  
+            breakpoint()                                              
             
             # TODO: to complete the following methods
             population_new = self.fill_population(front_dict_R) # updated population_new
