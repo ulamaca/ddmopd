@@ -68,7 +68,7 @@ class NSGA2:
         population = [legalize_seq_for_clf(self.mutator.mutate(seed_seq)) for _ in range(self.population_size)]  
         return population
     
-    def fill_population(self, front_dict: dict, verbose=False) -> list[Chromosome]:
+    def fill_population(self, front_dict: dict, verbose=True) -> list[Chromosome]:
         '''
             fill the poluation given the current sorted front and retained chromosome
         '''  
@@ -77,7 +77,9 @@ class NSGA2:
         
         # TODO: assume the front_dict is being sorted already!!
         
-        for k,v in front_dict.items():
+        n_fronts = len(front_dict)
+        for k in range(n_fronts):
+            v = front_dict[k]
             if verbose:
                 print(f' collecting {k}th front')
             if len(v) <= n_to_fill:
