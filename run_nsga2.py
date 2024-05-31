@@ -8,6 +8,8 @@ import matplotlib.pyplot as plt
 
 from sklearn.base import BaseEstimator, TransformerMixin
 
+TODAY_STR = datetime.date.today().strftime('%y%m%d')    
+
 class KMerTransformer(BaseEstimator, TransformerMixin):
     def __init__(self, k=3):
         self.k = k
@@ -31,13 +33,12 @@ def plot_trace_of_ga(df_trace, score_1, score_2, n_fronts=5):
     plt.xlabel(f'score: {score_1}')
     plt.ylabel(f'score: {score_2}')
     plt.title('NSGA-II Evolution Trace')
-    plt.legend()
-    today_str = datetime.date.today().strftime('%y%m%d')    
+    plt.legend()    
     gen = df_trace['generation'].max()
-    plt.savefig(f'assets/analysis/evo_traces/{today_str}_gen={gen}_rank<={n_fronts}.png')
+    plt.savefig(f'assets/analysis/evo_traces/{TODAY_STR}_gen={gen}_rank<={n_fronts}.png')
 
-    # Show plot
-    plt.show()
+    # # Show plot
+    # plt.show()
 
 if __name__ == '__main__':
     hemo_scorer = joblib.load(HEMO_SCORE_PIPELINE_PATH)
@@ -47,7 +48,10 @@ if __name__ == '__main__':
         'rf_mic_clf': mic_scorer
     }
     ga = NSGA2(scorers=scorer_dict,
-               num_generations=15)
+               num_generations=50)
     df_trace = ga.run()
+    gen = df_trace['generation'].max()
+    df_trace.to_csv(f'assets/analysis/evo_traces/{TODAY_STR}_gen={gen}.csv', index=None)
     plot_trace_of_ga(df_trace, 'rf_hemo_clf', 'rf_mic_clf')
+    
     
