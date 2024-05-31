@@ -1,8 +1,13 @@
+import joblib
 from optimizer import NSGA2
 from config import HEMO_SCORE_PIPELINE_PATH, MIC_SCORE_PIPELNE_PATH
-import joblib
+
+import datetime
+import seaborn as sns
+import matplotlib.pyplot as plt
 
 from sklearn.base import BaseEstimator, TransformerMixin
+
 class KMerTransformer(BaseEstimator, TransformerMixin):
     def __init__(self, k=3):
         self.k = k
@@ -18,9 +23,6 @@ class KMerTransformer(BaseEstimator, TransformerMixin):
         #     return []
         return [sequence[i:i+self.k] for i in range(len(sequence) - self.k + 1)]
 
-import matplotlib.pyplot as plt
-import seaborn as sns
-import datetime
 
 def plot_trace_of_ga(df_trace, score_1, score_2, n_fronts=5):
     plt.figure(figsize=(10, 6))
