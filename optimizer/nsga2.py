@@ -3,6 +3,7 @@ from .nondominate_sort import sort_nondominate, convert_front_dict_to_df
 from manipulate.mutate import Genetic_Mutations
 from manipulate.cross_over import cut_inverted_cross_over
 import random
+import pandas as pd
 
 '''
     NSGA2 for Peptide Optimization
@@ -147,12 +148,31 @@ class NSGA2:
 
         return new_population
     
-    def sort_ranked_population(self, population, cd=False):
+    def sort_ranked_population(self, population):
         '''
             cd: sort considering crowding distance (TODO)
         '''
+        return
 
-    def run(self, seed_population=None):        
+    @staticmethod
+    def convert_generations_to_df(generations: list):
+        '''
+            assume generations follows order
+        '''        
+        rows = []
+        for i, generation_i in enumerate(generations):
+            for chorosome in generation_i:
+                row = chorosome.__dict__
+                for score_name, v in row['scores'].items():
+                    row[score_name] = v
+                del row['scores']
+                row['generation'] = i+1
+                rows.append(row)
+        df = pd.DataFrame(rows)
+        
+        return df
+
+    def run(self, seed_population=None, use_crowding_distance=False):        
         '''
             *_population: list of str
             
@@ -169,7 +189,7 @@ class NSGA2:
         # initial population
                
         for step in range(self.num_generations):         
-            print(f'ga: runing {step}th generation')       
+            print(f'ga: runing {step+1}th generation')       
             child_population = self.make_new_population(parent_population)
             R = child_population + parent_population# R for R_t in the NSGA-II paper
             # TODO: to avoid re-evaluate evaluated ones (if needed)
@@ -177,12 +197,16 @@ class NSGA2:
             front_dict_R = sort_nondominate(R_chrsms, list(self.scorer_dict.keys())) # only rank the chromosoes                                                            
                                                 
             ## where the selection happens
-            population_new = self.fill_population(front_dict_R) # updated population_new
-            breakpoint()
-            # TODO: to complete the following methods
-            population_new = self.sort_ranked_population(population_new) 
+            population_new = self.fill_population(front_dict_R) # updated population_new                        
+            if use_crowding_distance:
+                # TODO: to implement sorting with adding crowding distance
+                population_new = self.sort_ranked_population(population_new) 
             population_new = population_new[:self.population_size] # choose the eliltes                        
+            generations.append(population_new)
             ## 
-            parent_population = population_new
+            parent_population = [chromosome.sequence for chromosome in population_new]
+        
+        df_trace = self.convert_generations_to_df(generations)
+        return df_trace
                         
 
