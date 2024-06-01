@@ -47,11 +47,13 @@ if __name__ == '__main__':
         'rf_hemo_clf': hemo_scorer,
         'rf_mic_clf': mic_scorer
     }
+    how_to_init_population = 'random'
     ga = NSGA2(scorers=scorer_dict,
-               num_generations=50)
+               num_generations=10, 
+               how_to_init_population=how_to_init_population)
     df_trace = ga.run()
     gen = df_trace['generation'].max()
-    df_trace.to_csv(f'assets/analysis/evo_traces/{TODAY_STR}_gen={gen}.csv', index=None)
+    df_trace.to_csv(f'assets/analysis/evo_traces/{TODAY_STR}_init={how_to_init_population}_gen={gen}.csv', index=None)
     plot_trace_of_ga(df_trace, 'rf_hemo_clf', 'rf_mic_clf')
     
     
