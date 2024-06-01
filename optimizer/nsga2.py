@@ -91,6 +91,23 @@ class NSGA2:
         
         return init_population
 
+    def init_random_population(self, sample_vocab='normal_aa'):
+        if sample_vocab == 'normal_aa':
+            l_min = 10
+            l_max = 30
+            amino_acids = ['A', 'R', 'N', 'D', 'C', 'E', 'Q', 'G', 'H', 'I', 'L', 'K', 'M', 'F', 'P', 'S', 'T', 'W', 'Y', 'V']
+            
+            population = []
+            for _ in range(self.population_size):
+                seq_len = random.randint(l_min, l_max)                
+                seq = ''.join(random.choice(amino_acids) for _ in range(seq_len))
+                population.append(seq)
+                        
+        else:
+            raise ValueError
+
+        return population
+
     ##
     def fill_population(self, front_dict: dict, verbose=True) -> list[Chromosome]:
         '''
