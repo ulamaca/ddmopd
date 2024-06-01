@@ -107,6 +107,14 @@ class NSGA2:
             raise ValueError
 
         return population
+    
+    def init_population_by_sample_negative(self):
+        df = pd.read_csv(ACTV_DATA_PATH)
+        df['len'] = df['Sequence'].apply(len)
+        df_ = df.query('activity == 0 and len >=3') # cross-over requires len >=3        
+        df_ = df_.sample(self.population_size, random_state=self.random_seed)        
+        population = df_['Sequence'].to_list()        
+        return population
 
     ##
     def fill_population(self, front_dict: dict, verbose=True) -> list[Chromosome]:
