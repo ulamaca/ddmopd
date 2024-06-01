@@ -4,6 +4,7 @@ from manipulate.mutate import Genetic_Mutations
 from manipulate.cross_over import cut_inverted_cross_over
 import random
 import pandas as pd
+from config import ACTV_DATA_PATH
 
 '''
     NSGA2 for Peptide Optimization
@@ -48,12 +49,17 @@ class NSGA2:
                 retain_rate=0.2,
                 insertion_rate=0.3,                                
                 constraint_handle=[],   
-                random_seed=56,                                        
+                how_to_init_population='random',
+                random_seed=56,                   
+                **kwargs                     
                 ) -> None:        
         
         assert len(constraint_handle) <= 0, 'constraint handle is not yet implemented'
+        assert how_to_init_population in ['seed', 'negative', 'random']
 
         random.seed(random_seed)
+        self.random_seed = random_seed
+        self.how_to_init_population = how_to_init_population
         self.scorer_dict = scorers
         self.population_size = population_size
         self.cross_over_rate = crossover_rate
@@ -64,11 +70,28 @@ class NSGA2:
         self._runs = 0 # how many runs have done
         
     
-    # init population
-    def init_popluation_with_a_seed(self, seed_seq = 'GLPALISWSKRKRQQ'):                
-        population = [legalize_seq_for_clf(self.mutator.mutate(seed_seq)) for _ in range(self.population_size)]  
-        return population
+    ## init population
+    def init_popluation_with_a_seed(self, seed_seqs = ['GLPALISWSKRKRQQ']):                
+        population = []
+        n_each_seed_seq = self.population_size // len(seed_seqs)
+        for seed_seq in seed_seqs:
+            mutated_seed_seq = [legalize_seq_for_clf(self.mutator.mutate(seed_seq)) for _ in range(n_each_seed_seq)]  
+            population.extend(mutated_seed_seq)
+        return population    
     
+    def init_population(self, how_to_init_population, **kwargs):
+        if how_to_init_population == 'seed':
+            init_population = self.init_popluation_with_a_seed(kwargs['seed'])
+        elif how_to_init_population == 'random':
+            init_population = self.init_random_population()
+        elif how_to_init_population == 'negative':
+            init_population = self.init_population_by_sample_negative()
+        else:
+            raise ValueError
+        
+        return init_population
+
+    ##
     def fill_population(self, front_dict: dict, verbose=True) -> list[Chromosome]:
         '''
             fill the poluation given the current sorted front and retained chromosome
@@ -172,7 +195,7 @@ class NSGA2:
         
         return df
 
-    def run(self, seed_population=None, use_crowding_distance=False):        
+    def run(self, seed_seqs=['GLPALISWSKRKRQQ'], use_crowding_distance=False):        
         '''
             *_population: list of str
             
@@ -181,8 +204,8 @@ class NSGA2:
             TODO:
                 to think about the best use of Chromosome representation
         '''
-        # TODO: to make the population init more flexible
-        parent_population = self.init_popluation_with_a_seed() if seed_population is None else seed_population                
+        # TODO: to make the population init more flexible        
+        parent_population = self.init_population(self.how_to_init_population, **{'seed_seq': seed_seqs})
         child_population = []
         
         generations = []
