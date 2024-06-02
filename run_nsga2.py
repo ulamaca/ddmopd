@@ -1,6 +1,6 @@
 import joblib
 from optimizer import NSGA2
-from config import HEMO_SCORE_PIPELINE_PATH, MIC_SCORE_PIPELNE_PATH
+from config import HEMO_SCORE_PIPELINE_PATH, MIC_SCORE_PIPELNE_PATH, AMP_SCORE_PIPELINE_PATH
 
 import datetime
 import seaborn as sns
@@ -43,17 +43,20 @@ def plot_trace_of_ga(df_trace, score_1, score_2, n_fronts=5):
 if __name__ == '__main__':
     hemo_scorer = joblib.load(HEMO_SCORE_PIPELINE_PATH)
     mic_scorer = joblib.load(MIC_SCORE_PIPELNE_PATH)
+    amp_scorer = joblib.load(AMP_SCORE_PIPELINE_PATH)
     scorer_dict = {
         'rf_hemo_clf': hemo_scorer,
-        'rf_mic_clf': mic_scorer
+        'rf_mic_clf': mic_scorer,
+        'rf_amp_clf': amp_scorer
     }
+
     how_to_init_population = 'random'
     ga = NSGA2(scorers=scorer_dict,
-               num_generations=10, 
+               num_generations=50, 
                how_to_init_population=how_to_init_population)
     df_trace = ga.run()
     gen = df_trace['generation'].max()
     df_trace.to_csv(f'assets/analysis/evo_traces/{TODAY_STR}_init={how_to_init_population}_gen={gen}.csv', index=None)
-    plot_trace_of_ga(df_trace, 'rf_hemo_clf', 'rf_mic_clf')
+    plot_trace_of_ga(df_trace, 'rf_amp_clf', 'rf_mic_clf')
     
     
