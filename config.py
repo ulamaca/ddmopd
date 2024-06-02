@@ -13,7 +13,7 @@ ACTV_DATA_PATH = os.path.join(DATA_PATH, 'dbaasp/fine_tune_activity.csv')
 HEMO_DATA_PATH = os.path.join(DATA_PATH, 'dbaasp/fine_tune_hemolysis.csv')
 
 
-#AMP_SCORE_PIPELINE_PATH = os.path.join(REPO_PATH, )
+AMP_SCORE_PIPELINE_PATH = os.path.join(REPO_PATH, 'score_pipeline/amp_kmer_rf.joblib')
 MIC_SCORE_PIPELNE_PATH = os.path.join(REPO_PATH, 'score_pipeline/mic_ecoli_kmer_rf.joblib')
 HEMO_SCORE_PIPELINE_PATH = os.path.join(REPO_PATH, 'score_pipeline/hemolysis_kmer_rf.joblib')
 
