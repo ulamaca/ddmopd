@@ -78,3 +78,49 @@ def convert_front_dict_to_df(front_dict, score_names=['p_hemo', 'p_actv']):
         df[score_name] = df['scores'].apply(lambda x:x[score_name])
     
     return df
+
+def calc_crowding_distance(chromosomes: list[Chromosome], score_names: list[str]):
+    '''
+        to check, if CD calc process is doing wrong for retrieving data
+    '''    
+    INF = 1e8
+    
+    # init cd value
+    for chromosome in chromosomes:
+        chromosome.crowding_distance = 0.0
+    
+    max_rank = max([chr.rank for chr in chromosomes])
+
+    # calculate cd
+    for score_name in score_names:
+        for rank in range(1, max_rank+1):
+            # get only chromosomes with rank == rank
+            chromosomes_m = [chr for chr in chromosomes if chr.rank == rank]
+            chromosomes_m = sorted(chromosomes_m, key=lambda x:x.scores[score_name] )            
+            N_m_r = len(chromosomes_m)                        
+            for i, chromosome in enumerate(chromosomes_m):
+                if i == 0 or i == N_m_r-1:
+                    chromosome.crowding_distance += INF
+                else:                                       
+                    delta = chromosomes_m[i+1].scores[score_name] - chromosomes_m[i-1].scores[score_name] 
+                    
+                    if delta < 0:
+                        print('delta should >= 0')
+                        breakpoint()
+                    chromosome.crowding_distance += (delta)
+
+    try:
+        assert min([chr.crowding_distance for chr in chromosomes]) >= 0
+    except:
+        print(chromosomes)
+        breakpoint()
+
+    
+    # sort according to (rank >> cd)
+    cd_sorted_chromosomes = []
+    for rank in range(1, max_rank+1):
+        chromosomes_r = [chr for chr in chromosomes if chr.rank == rank]
+        chromosomes_r = sorted(chromosomes_r, key=lambda x:x.crowding_distance, reverse=True)
+        cd_sorted_chromosomes.extend(chromosomes_r)
+        
+    return cd_sorted_chromosomes
