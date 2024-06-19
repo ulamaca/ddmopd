@@ -7,3 +7,5 @@ class Chromosome:
     sequence: str
     scores: dict
     rank: int = -1 # default as -1 (non-ranked)
+    crowding_distance: float = None
+    constraints: dict = None

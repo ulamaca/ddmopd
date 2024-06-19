@@ -5,6 +5,7 @@ from manipulate.cross_over import cut_inverted_cross_over
 import random
 import pandas as pd
 from config import ACTV_DATA_PATH
+from utils.biological_filter import check_sequence_for_positive_clusters, check_sequence_for_hydrophobic_clusters
 
 '''
     NSGA2 for Peptide Optimization
@@ -50,7 +51,8 @@ class NSGA2:
                 insertion_rate=0.3,                                
                 constraint_handle=[],   
                 how_to_init_population='random',
-                random_seed=56,                   
+                random_seed=56,   
+                set_constraints=False,                
                 **kwargs                     
                 ) -> None:        
         
@@ -68,6 +70,11 @@ class NSGA2:
         self.num_generations = num_generations
         self.scorer_dict = scorers
         self._runs = 0 # how many runs have done
+        self.set_constraints = set_constraints
+        self.biological_filters = {
+            'pos_clstr': check_sequence_for_positive_clusters,
+            'hydrophoic_clstr': check_sequence_for_hydrophobic_clusters
+        }
         
     
     ## init population
@@ -155,10 +162,26 @@ class NSGA2:
             population_scores[name] = scorer.predict_proba(population)[:,1]
         
         for i, pep_seq in enumerate(population):
+            # eval constraints of 
+            
+            # TODO to estimate the speed drop
+            if self.set_constraints:
+                constraints_seq = {}
+                for c, f_c in self.biological_filters.items():
+                    try:
+                        res_f_c = f_c(pep_seq)
+                    except:
+                        # set as failed if can not be evaluated
+                        res_f_c = False
+                    constraints_seq[c] = res_f_c
+            else:
+                constraints_seq = None
+                            
             x = Chromosome(
                 id=i,
                 sequence=pep_seq,
-                scores={k:v[i] for k,v in population_scores.items()}
+                scores={k:v[i] for k,v in population_scores.items()},
+                constraints=constraints_seq
             )
 
             population_chromosomes.append(x)
@@ -197,10 +220,12 @@ class NSGA2:
         return new_population
     
     def sort_ranked_population(self, population):
-        '''
+        '''        
             cd: sort considering crowding distance (TODO)
         '''
-        return
+        from .nondominate_sort import calc_crowding_distance
+        sorted_population = calc_crowding_distance(population,  list(self.scorer_dict.keys()))
+        return sorted_population
 
     @staticmethod
     def convert_generations_to_df(generations: list):
