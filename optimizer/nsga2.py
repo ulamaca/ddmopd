@@ -124,13 +124,14 @@ class NSGA2:
         return population
 
     ##
-    def fill_population(self, front_dict: dict, verbose=True) -> list[Chromosome]:
+    def fill_population(self, front_dict: dict, verbose=True, m_fill=1) -> list[Chromosome]:
         '''
             fill the poluation given the current sorted front and retained chromosome
         '''  
         filled_population = []
-        n_to_fill = self.population_size
-        
+        n_to_fill = self.population_size                    
+        if m_fill > 1:
+            n_to_fill = int(n_to_fill * m_fill)        
         # TODO: assume the front_dict is being sorted already!!
         
         n_fronts = len(front_dict)
@@ -143,10 +144,12 @@ class NSGA2:
             else:
                 filled_population.extend(v[:n_to_fill])
             
-            if len(filled_population) == self.population_size:
+            # if len(filled_population) == self.population_size:
+            #     break
+            # else:
+            #     n_to_fill = self.population_size - len(filled_population)
+            if len(filled_population) >= n_to_fill:            
                 break
-            else:
-                n_to_fill = self.population_size - len(filled_population)
                         
         return filled_population
 
@@ -219,12 +222,41 @@ class NSGA2:
 
         return new_population
     
+    @staticmethod
+    def rank_infeasible_chromosome(chromsome: Chromosome):        
+        if chromsome.constraints is None:
+            r=0
+        else:
+            r=sum(chromsome.constraints.values())        
+        return r
+
+    
     def sort_ranked_population(self, population):
         '''        
             cd: sort considering crowding distance (TODO)
         '''
         from .nondominate_sort import calc_crowding_distance
-        sorted_population = calc_crowding_distance(population,  list(self.scorer_dict.keys()))
+        if not self.set_constraints:        
+            sorted_population = calc_crowding_distance(population,  list(self.scorer_dict.keys()))
+        else:
+            # devide the population into feasible/infeasible
+            n_constraints = len(self.biological_filters)
+            population_f = []
+            population_inf = []
+            for chromosome in population:
+                if chromosome.constraints is None:
+                    population_inf.append(chromosome)
+                elif sum(chromosome.constraints.values()) < n_constraints:
+                    population_inf.append(chromosome)
+                else:
+                    population_f.append(chromosome)            
+            # for population_f, rank by sorting            
+            population_f = calc_crowding_distance(population_f,  list(self.scorer_dict.keys()))
+            # for population_inf, rank by constraints safisfied
+            population_inf = sorted(population_inf, key=self.rank_infeasible_chromosome, reverse=True)
+            sorted_population = population_f + population_inf            
+            
+
         return sorted_population
 
     @staticmethod
@@ -238,7 +270,16 @@ class NSGA2:
                 row = chorosome.__dict__
                 for score_name, v in row['scores'].items():
                     row[score_name] = v
-                del row['scores']
+                del row['scores']                
+                
+
+                n_pass = 0
+                if row['constraints'] is not None:
+                    for c_name, c_pass in row['constraints'].items():
+                        row[c_name] = c_pass
+                        n_pass += int(c_pass)
+                del row['constraints']
+                row['num_c_pass'] = n_pass
                 row['generation'] = i+1
                 rows.append(row)
         df = pd.DataFrame(rows)
@@ -264,13 +305,14 @@ class NSGA2:
         for step in range(self.num_generations):         
             print(f'ga: runing {step+1}th generation')       
             child_population = self.make_new_population(parent_population)
-            R = child_population + parent_population# R for R_t in the NSGA-II paper
+            R = child_population + parent_population# R for R_t in the NSGA-II paper            
             # TODO: to avoid re-evaluate evaluated ones (if needed)
             R_chrsms = self.evaluate_population(R)
             front_dict_R = sort_nondominate(R_chrsms, list(self.scorer_dict.keys())) # only rank the chromosoes                                                            
                                                 
             ## where the selection happens
-            population_new = self.fill_population(front_dict_R) # updated population_new                        
+            #population_new = self.fill_population(front_dict_R) # updated population_new                        
+            population_new = self.fill_population(front_dict_R, m_fill=1.8) # updated population_new                                    
             if use_crowding_distance:
                 # TODO: to implement sorting with adding crowding distance
                 population_new = self.sort_ranked_population(population_new) 
