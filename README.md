@@ -5,5 +5,5 @@
 - to explore data for peptide molecules 
 - to assess effectiveness of constrained multi-objective GA
 ## example results:
-- An example Pareto front evolution trace for a full round of GA optimization
+- An example Pareto front evolution trace for a 50-generation NSGA-II optimization
 ![An example Pareto front evolution trace:](./assets/analysis/evo_traces/240619_gen=50_rank<=5.png)
